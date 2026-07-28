@@ -1,0 +1,346 @@
+<style>
+  .cal-wrap {
+    padding: 1.5rem 0;
+    font-family: var(--font-sans);
+  }
+
+  .cal-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .cal-title {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    letter-spacing: 0.04em;
+  }
+
+  .cal-sub {
+    font-size: 12px;
+    color: var(--color-text-tertiary);
+    margin-top: 4px;
+    letter-spacing: 0.06em;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .cell {
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(18px);
+    transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    background: var(--color-background-primary);
+  }
+
+  .cell.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .cell:hover {
+    border-color: var(--color-border-secondary);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Poster background */
+  .cell-poster {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center top;
+    transition: transform 0.3s ease;
+  }
+
+  .cell:hover .cell-poster {
+    transform: scale(1.04);
+  }
+
+  /* Gradient overlay */
+  .cell-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.2) 55%, rgba(0, 0, 0, 0.0) 100%);
+    pointer-events: none;
+  }
+
+  /* No-poster fallback overlay */
+  .cell.no-poster .cell-overlay {
+    background: transparent;
+  }
+
+  /* Info at bottom */
+  .cell-info {
+    position: relative;
+    z-index: 2;
+    padding: 8px 10px 9px;
+  }
+
+  .cell-num {
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 3px;
+    letter-spacing: 0.06em;
+  }
+
+  .cell.no-poster .cell-num {
+    color: var(--color-text-tertiary);
+  }
+
+  .cell-title {
+    font-size: 11.5px;
+    color: #fff;
+    line-height: 1.35;
+    font-weight: 500;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  .cell.no-poster .cell-title {
+    color: var(--color-text-primary);
+    text-shadow: none;
+  }
+
+  /* Watched state */
+  .cell.watched {
+    border-color: #5DCAA5;
+    box-shadow: 0 0 0 1.5px #5DCAA5;
+  }
+
+  .cell.watched .cell-overlay {
+    background: linear-gradient(to top, rgba(13, 95, 73, 0.88) 0%, rgba(29, 158, 117, 0.35) 55%, rgba(21, 120, 90, 0.15) 100%);
+  }
+
+  .cell.no-poster.watched {
+    background: #E1F5EE;
+  }
+
+  .cell.no-poster.watched .cell-overlay {
+    background: transparent;
+  }
+
+  .cell.no-poster.watched .cell-num {
+    color: #0F6E56;
+  }
+
+  .cell.no-poster.watched .cell-title {
+    color: #085041;
+  }
+
+  /* Checkmark */
+  .cell-check {
+    display: none;
+    position: absolute;
+    top: 8px;
+    right: 9px;
+    z-index: 3;
+    width: 20px;
+    height: 20px;
+    background: #1D9E75;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  }
+
+  .cell.watched .cell-check {
+    display: flex;
+  }
+
+  /* Progress */
+  .progress-bar-wrap {
+    margin: 1.25rem 0 0.5rem;
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-bottom: 6px;
+  }
+
+  .progress-track {
+    height: 4px;
+    background: var(--color-border-tertiary);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: #1D9E75;
+    border-radius: 99px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  .done-msg {
+    text-align: center;
+    font-size: 14px;
+    color: #0F6E56;
+    font-weight: 500;
+    min-height: 20px;
+    margin-top: 8px;
+  }
+
+  .reset-btn {
+    display: block;
+    margin: 1rem auto 0;
+    font-size: 12px;
+    padding: 5px 16px;
+    cursor: pointer;
+    border-radius: var(--border-radius-md);
+    border: 0.5px solid var(--color-border-secondary);
+    background: transparent;
+    color: var(--color-text-secondary);
+  }
+
+  .reset-btn:hover {
+    background: var(--color-background-secondary);
+  }
+</style>
+
+<div class="cal-wrap">
+  <h2 class="sr-only">Calendario de 16 películas. Haz clic en cada título para marcarlo como visto.</h2>
+  <div class="cal-header">
+    <div class="cal-title">Calendario de películas</div>
+    <div class="cal-sub">TOCA PARA MARCAR COMO VISTA</div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-label">
+      <span>Películas vistas</span>
+      <span id="count-lbl">0 / 16</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="bar"></div>
+    </div>
+  </div>
+  <div class="done-msg" id="done-msg"></div>
+  <button class="reset-btn" onclick="resetAll()">Reiniciar</button>
+</div>
+
+<script>
+  const movies = [
+    { title: "Vivarium", img: "Vivarium.jpg" },
+    { title: "Love Actually", img: "Love Actually.jpg" },
+    { title: "2001: A Space Odyssey", img: "2001.jpg" },
+    { title: "La última casa", img: "LA ULTIMA CASA.jpg" },
+    { title: "Bridget Jones's Diary", img: "Bridget Jones's Diary.jpg" },
+    { title: "El gran hotel Budapest", img: "El gran hotel Budapest.jpg" },
+    { title: "Kill Bill: Volumen 1", img: "Kill Bill Volumen 1.jpg" },
+    { title: "Finding Emily", img: "Finding Emily.jpg" },
+    { title: "E.T., el extraterrestre", img: "E.T., el extraterrestre.jpg" },
+    { title: "La teoría del todo", img: "La teoría del todo.jpg" },
+    { title: "Scary Movie 2026", img: "Scary Movie 2026.jpg" },
+    { title: "Hambre de poder", img: "Hambre de poder.jpg" },
+    { title: "Instinto maternal", img: "Instinto maternal.jpg" },
+    { title: "Love, Rosie", img: "Love, Rosie.jpg" },
+    { title: "Four Weddings and a Funeral", img: "Four Weddings and a Funeral.jpg" },
+    { title: "El resplandor", img: "El resplandor.jpg" }
+  ];
+
+  // --- Persistencia con localStorage ---
+  const STORAGE_KEY = 'movie_calendar_watched';
+
+  function saveWatched() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(watched));
+  }
+
+  function loadWatched() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length === 16) return parsed;
+      }
+    } catch (e) { }
+    return Array(16).fill(false);
+  }
+
+  let watched = loadWatched();
+
+  function render() {
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    movies.forEach((m, i) => {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+
+      cell.innerHTML = `
+      <div class="cell-poster"></div>
+      <div class="cell-overlay"></div>
+      <div class="cell-check">✓</div>
+      <div class="cell-info">
+        <div class="cell-num">${String(i + 1).padStart(2, '0')}</div>
+        <div class="cell-title">${m.title}</div>
+      </div>`;
+
+      // Cargar imagen después de que el DOM esté listo
+      if (m.img) {
+        const img = new Image();
+        img.onload = () => {
+          cell.querySelector('.cell-poster').style.backgroundImage = `url('${m.img}')`;
+          cell.classList.remove('no-poster');
+        };
+        img.onerror = () => { cell.classList.add('no-poster'); };
+        img.src = m.img;
+      } else {
+        cell.classList.add('no-poster');
+      }
+
+      if (watched[i]) cell.classList.add('watched');
+      cell.onclick = () => {
+        watched[i] = !watched[i];
+        saveWatched();
+        renderCells();
+      };
+      grid.appendChild(cell);
+      setTimeout(() => cell.classList.add('visible'), 60 + i * 55);
+    });
+  }
+
+  function renderCells() {
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach((cell, i) => {
+      if (watched[i]) cell.classList.add('watched');
+      else cell.classList.remove('watched');
+    });
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const n = watched.filter(Boolean).length;
+    document.getElementById('count-lbl').textContent = n + ' / 16';
+    document.getElementById('bar').style.width = Math.round(n / 16 * 100) + '%';
+    document.getElementById('done-msg').textContent = n === 16 ? '¡Completaste el calendario! Cinéfila de élite 🎬' : '';
+  }
+
+  function resetAll() {
+    watched = Array(16).fill(false);
+    saveWatched();
+    render();
+    updateProgress();
+  }
+
+  render();
+  updateProgress();
+</script>
